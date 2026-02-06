@@ -1,0 +1,4 @@
+Django>=4.2.0
+cryptography>=41.0.0
+python-decouple>=3.8
+resend>=2.0.0

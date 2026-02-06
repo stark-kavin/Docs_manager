@@ -1,0 +1,75 @@
+{% extends 'drive/base.html' %}
+{% load static %}
+
+{% block title %}Login - Secure Drive{% endblock %}
+
+{% block header %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at 20% 80%, rgba(79, 70, 229, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%);
+        pointer-events: none;
+    }
+
+    .login-wrapper {
+        width: 100%;
+        max-width: 420px;
+        padding: 1.5rem;
+    }
+
+    .auth-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 2.5rem;
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-xl);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-wrapper animate-slide-up">
+    <div class="auth-card">
+        <div class="text-center mb-4">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🔒</div>
+            <h1 style="font-size: 1.75rem;">Secure Drive</h1>
+            <p style="color: var(--text-secondary);">Enter your email to continue</p>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" id="email" name="email" class="form-control" required autofocus autocomplete="email"
+                    placeholder="Enter your email address"
+                    value="{% if request.POST.email %}{{ request.POST.email }}{% endif %}">
+            </div>
+
+            <button type="submit" class="btn btn-primary w-full mt-4" style="height: 48px; font-size: 1.05rem;">
+                Send Verification Code
+            </button>
+
+            <div class="text-center mt-4" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
+                We'll send a 6-digit verification code to your email address for secure login.
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

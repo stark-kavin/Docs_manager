@@ -1,0 +1,228 @@
+{% extends 'drive/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Secure Drive{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav class="breadcrumb mb-4" aria-label="Breadcrumb">
+    <div class="breadcrumb-item">
+        <span class="breadcrumb-separator">🏠</span>
+        <a href="{% url 'dashboard' %}">Home</a>
+    </div>
+    {% for folder in breadcrumb %}
+    <div class="breadcrumb-item">
+        <span class="breadcrumb-separator">›</span>
+        <a href="{% url 'folder_view' folder.id %}">{{ folder.name }}</a>
+    </div>
+    {% endfor %}
+</nav>
+
+<!-- Actions -->
+<div class="d-flex justify-between align-center mb-4">
+    <h2 class="text-xl font-bold">Files & Folders</h2>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" onclick="showCreateFolderModal()">
+            <span>📁</span> New Folder
+        </button>
+        <button class="btn btn-primary" onclick="showUploadModal()">
+            <span>📤</span> Upload File
+        </button>
+    </div>
+</div>
+
+<!-- File Grid -->
+{% if folders or files %}
+<div class="file-grid animate-fade-in"
+    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;">
+    {% for folder in folders %}
+    <div class="card folder-item" data-id="{{ folder.id }}" data-type="folder" onclick="openFolder({{ folder.id }})"
+        tabindex="0" role="button" aria-label="Folder: {{ folder.name }}"
+        onkeydown="handleKeyDown(event, {{ folder.id }}, 'folder')"
+        style="padding: 1.5rem; text-align: center; cursor: pointer; position: relative;"
+        onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-lg)'"
+        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+
+        <button class="btn btn-danger btn-sm delete-btn"
+            style="position: absolute; top: 0.5rem; right: 0.5rem; padding: 0.25rem; border-radius: 50%; opacity: 0; transition: opacity 0.2s;"
+            onclick="deleteFolder(event, {{ folder.id }})" aria-label="Delete folder">
+            ✕
+        </button>
+
+        <div style="font-size: 3rem; margin-bottom: 0.5rem;">📁</div>
+        <div style="font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ folder.name }}
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">{{ folder.subfolders.count|add:folder.files.count }}
+            items</div>
+    </div>
+    {% endfor %}
+
+    {% for file in files %}
+    <div class="card file-item" data-id="{{ file.id }}" data-type="file" onclick="downloadFile({{ file.id }})"
+        tabindex="0" role="button" aria-label="File: {{ file.name }}"
+        onkeydown="handleKeyDown(event, {{ file.id }}, 'file')"
+        style="padding: 1.5rem; text-align: center; cursor: pointer; position: relative;"
+        onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-lg)'"
+        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+
+        <button class="btn btn-danger btn-sm delete-btn"
+            style="position: absolute; top: 0.5rem; right: 0.5rem; padding: 0.25rem; border-radius: 50%; opacity: 0; transition: opacity 0.2s;"
+            onclick="deleteFile(event, {{ file.id }})" aria-label="Delete file">
+            ✕
+        </button>
+
+        <div style="font-size: 3rem; margin-bottom: 0.5rem;" role="img" aria-label="Icon for {{ file.name }}">
+            {{ file.icon }}
+        </div>
+        <div style="font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            {{ file.name }}
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">{{ file.original_size|filesizeformat }}</div>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    .folder-item:hover .delete-btn,
+    .file-item:hover .delete-btn {
+        opacity: 1 !important;
+    }
+</style>
+{% else %}
+<div class="card empty-state text-center p-5" style="padding: 4rem 2rem;">
+    <div style="font-size: 4rem; opacity: 0.5; margin-bottom: 1rem;">📂</div>
+    <h3>No files or folders yet</h3>
+    <p style="color: var(--text-secondary);">Upload your first file or create a folder to get started</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block modal %}
+<!-- Create Folder Modal -->
+<div id="createFolderModal" class="modal"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card modal-content animate-slide-up"
+        style="width: 100%; max-width: 400px; margin: 10vh auto; padding: 2rem;">
+        <div class="d-flex justify-between align-center mb-4">
+            <h3>Create New Folder</h3>
+            <button onclick="hideCreateFolderModal()"
+                style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">✕</button>
+        </div>
+        <form method="post" action="{% url 'create_folder' %}">
+            {% csrf_token %}
+            <input type="hidden" name="parent_id" value="{{ current_folder.id|default:'' }}">
+            <div class="form-group">
+                <label class="form-label" for="folderName">Folder Name</label>
+                <input type="text" id="folderName" name="name" class="form-control" required
+                    placeholder="Enter folder name">
+            </div>
+            <div class="d-flex justify-between gap-2 mt-4">
+                <button type="button" class="btn btn-secondary w-full" onclick="hideCreateFolderModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary w-full">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Upload File Modal -->
+<div id="uploadModal" class="modal"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card modal-content animate-slide-up"
+        style="width: 100%; max-width: 400px; margin: 10vh auto; padding: 2rem;">
+        <div class="d-flex justify-between align-center mb-4">
+            <h3>Upload File</h3>
+            <button onclick="hideUploadModal()"
+                style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">✕</button>
+        </div>
+        <form method="post" action="{% url 'upload_file' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="folder_id" value="{{ current_folder.id|default:'' }}">
+            <div class="form-group">
+                <label class="form-label" for="fileInput">Choose File</label>
+                <input type="file" id="fileInput" name="file" class="form-control" required>
+            </div>
+            <div class="d-flex justify-between gap-2 mt-4">
+                <button type="button" class="btn btn-secondary w-full" onclick="hideUploadModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary w-full">Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Modal Logic
+    function showCreateFolderModal() {
+        const modal = document.getElementById('createFolderModal');
+        modal.style.display = 'block';
+        document.getElementById('folderName').focus();
+    }
+
+    function hideCreateFolderModal() {
+        document.getElementById('createFolderModal').style.display = 'none';
+    }
+
+    function showUploadModal() {
+        document.getElementById('uploadModal').style.display = 'block';
+    }
+
+    function hideUploadModal() {
+        document.getElementById('uploadModal').style.display = 'none';
+    }
+
+    // Nav & Actions
+    function openFolder(id) {
+        window.location.href = `/folder/${id}/`;
+    }
+
+    function downloadFile(id) {
+        window.location.href = `/download/${id}/`;
+    }
+
+    function deleteFolder(event, id) {
+        event.stopPropagation();
+        if (confirm('Delete this folder and all contents?')) {
+            submitForm(`/delete-folder/${id}/`);
+        }
+    }
+
+    function deleteFile(event, id) {
+        event.stopPropagation();
+        if (confirm('Delete this file?')) {
+            submitForm(`/delete-file/${id}/`);
+        }
+    }
+
+    function submitForm(action) {
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = action;
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]').cloneNode(true);
+        form.appendChild(csrf);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function handleKeyDown(e, id, type) {
+        if (e.key === 'Enter') {
+            type === 'folder' ? openFolder(id) : downloadFile(id);
+        }
+    }
+
+    // Close Modals on Outside Click
+    window.onclick = function (e) {
+        if (e.target.classList.contains('modal')) {
+            e.target.style.display = 'none';
+        }
+    }
+
+    // Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            hideCreateFolderModal();
+            hideUploadModal();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends 'drive/base.html' %}
+{% load static %}
+
+{% block title %}Verify OTP - Secure Drive{% endblock %}
+
+{% block header %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    body::before {
+        content: '';
+        position: fixed;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+        background-size: 50px 50px;
+        animation: float 20s ease-in-out infinite;
+        z-index: -1;
+    }
+
+    @keyframes float {
+
+        0%,
+        100% {
+            transform: translate(0, 0) rotate(0deg);
+        }
+
+        33% {
+            transform: translate(30px, -30px) rotate(120deg);
+        }
+
+        66% {
+            transform: translate(-20px, 20px) rotate(240deg);
+        }
+    }
+
+    .login-wrapper {
+        width: 100%;
+        max-width: 420px;
+        padding: 1.5rem;
+    }
+
+    .auth-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 2.5rem;
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .otp-input {
+        letter-spacing: 0.5rem;
+        font-size: 1.25rem;
+        text-align: center;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-wrapper animate-slide-up">
+    <div class="auth-card">
+        <div class="text-center mb-4">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔒</div>
+            <h1 style="font-size: 1.75rem;">Verify Email</h1>
+            <p style="color: var(--text-secondary);">Enter the 6-digit code sent to</p>
+            <div
+                style="background: var(--info-bg); color: var(--info-color); padding: 0.5rem; border-radius: var(--radius-md); margin-top: 0.5rem; font-weight: 500;">
+                {{ email }}
+            </div>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="otp" class="form-label text-center">Verification Code</label>
+                <input type="text" id="otp" name="otp" class="form-control otp-input" required autofocus maxlength="6"
+                    pattern="[0-9]{6}" placeholder="000000" inputmode="numeric" autocomplete="one-time-code"
+                    value="{% if request.POST.otp %}{{ request.POST.otp }}{% endif %}">
+            </div>
+
+            <button type="submit" class="btn btn-primary w-full mt-2" style="height: 48px; font-size: 1.05rem;">
+                Verify Code
+            </button>
+
+            <div class="d-flex justify-between gap-2 mt-4">
+                <a href="{% url 'resend_otp' %}" class="btn btn-secondary w-full text-center">Resend</a>
+                <a href="{% url 'login' %}" class="btn btn-secondary w-full text-center">Change Email</a>
+            </div>
+        </form>
+
+        <div id="timer" class="text-center mt-4" style="color: var(--text-muted); font-size: 0.9rem;">
+            Code expires in 10:00
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-format OTP input
+    const otpInput = document.getElementById('otp');
+    otpInput.addEventListener('input', function (e) {
+        this.value = this.value.replace(/\D/g, '');
+        if (this.value.length === 6) {
+            setTimeout(() => { this.form.submit(); }, 300);
+        }
+    });
+
+    // Countdown timer
+    let timeLeft = 10 * 60;
+    const timerElement = document.getElementById('timer');
+
+    function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.textContent = `Code expires in ${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        if (timeLeft <= 0) {
+            timerElement.textContent = 'Code has expired. Please request a new one.';
+            timerElement.style.color = 'var(--error-color)';
+            clearInterval(timerInterval);
+        } else {
+            timeLeft--;
+        }
+    }
+
+    const timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
+
+    otpInput.focus();
+</script>
+{% endblock %}

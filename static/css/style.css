@@ -357,3 +357,66 @@ button, input, select, textarea {
 .breadcrumb-separator {
     color: var(--text-muted);
 }
+/* Drop Zone */
+.drop-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    text-align: center;
+    transition: all var(--transition-fast);
+    background-color: var(--surface-alt);
+    cursor: pointer;
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--primary-color);
+    background-color: var(--primary-light);
+    transform: scale(1.01);
+}
+
+.drop-zone-text {
+    color: var(--text-secondary);
+    font-size: 0.925rem;
+    font-weight: 500;
+}
+
+.drop-zone-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    display: block;
+}
+
+#file-preview {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+.file-preview-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow: hidden;
+}
+
+.file-preview-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.remove-file {
+    color: var(--error-color);
+    cursor: pointer;
+    padding: 0.25rem;
+    font-weight: bold;
+}
